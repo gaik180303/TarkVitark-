@@ -1,5 +1,5 @@
-// aiFlagLog.js - AI Moderation Flag Log Schema
-const mongoose = require('mongoose');
+// AI Moderation Flag Log Schema
+import mongoose from 'mongoose';
 const Schema = mongoose.Schema;
 
 const aiFlagLogSchema = new Schema({
@@ -168,4 +168,4 @@ aiFlagLogSchema.statics.generateModerationStats = async function(timeframe = 7) 
 
 const AIFlagLog = mongoose.model('AIFlagLog', aiFlagLogSchema);
 
-module.exports = AIFlagLog;
+export default AIFlagLog;

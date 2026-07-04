@@ -1,57 +1,16 @@
-// import { useState } from "react";
-// import { Sun, Moon, UserCircle } from "lucide-react";
-// import { PlaceholdersAndVanishInput } from "../ui/Placeholder";
-// import { Link } from "react-router-dom";
-// export default function Navbar() {
-// const [darkMode, setDarkMode] = useState(false);
-
-//   return (
-//     <nav className="bg-gradient-to-r from-blue-600 to-violet-600  text-white px-6 py-3 flex items-center justify-between">
-//       <div className="text-xl font-bold">
-//         <Link to="/">TARKVITARK</Link>
-//       </div>
-
-//       <PlaceholdersAndVanishInput 
-//         placeholders={["Search for debates...", "Search by topics...", "Search by users..."]}
-//         onChange={(e) => console.log(e.target.value)}
-//         onSubmit={(e) => {
-//           e.preventDefault();
-//           console.log("Search submitted");
-//         }}
-//       />
-
-//       <div className="flex items-center space-x-4">
-//         <button className="bg-white text-blue-600 px-3 py-1 rounded-md font-medium">
-//           Change Language
-//         </button>
-
-//         <button
-//           onClick={() => setDarkMode(!darkMode)}
-//           className="bg-white text-blue-600 p-2 rounded-full"
-//         >
-//           {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-//         </button>
-//         <Link to="/profile">
-
-//         <UserCircle size={28} className="text-white cursor-pointer" />
-//         </Link>
-//       </div>
-//     </nav>
-//   );
-// }
-
-
-// src/components/Navbar.jsx
 import { useState, useEffect, useRef } from "react";
-import { UserCircle, ChevronDown } from "lucide-react";
+import { UserCircle, ChevronDown, LogOut } from "lucide-react";
 import { PlaceholdersAndVanishInput } from "../ui/Placeholder";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const { language, setLanguage, languages, isTranslating } = useLanguage();
+  const { isLoggedIn, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -64,6 +23,11 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
   const currentLanguage = languages.find((lang) => lang.code === language) || {
     code: "en",
     name: "English",
@@ -73,23 +37,18 @@ export default function Navbar() {
   return (
     <nav className="bg-gradient-to-r from-blue-600 to-violet-600 text-white px-6 py-3 flex items-center justify-between">
       <div className="text-xl font-bold">
-        <Link to="/" >
-          TARKVITARK
-        </Link>
+        <Link to="/">TARKVITARK</Link>
       </div>
 
-      <div className="w-1/3" >
+      <div className="w-1/3">
         <PlaceholdersAndVanishInput
           placeholders={[
             "Search for debates...",
             "Search by topics...",
             "Search by users...",
           ]}
-          onChange={(e) => console.log(e.target.value)}
-          onSubmit={(e) => {
-            e.preventDefault();
-            console.log("Search submitted");
-          }}
+          onChange={() => {}}
+          onSubmit={(e) => e.preventDefault()}
         />
       </div>
 
@@ -159,6 +118,18 @@ export default function Navbar() {
         <Link to="/profile" aria-label="Go to profile">
           <UserCircle size={28} className="text-white" />
         </Link>
+
+        {isLoggedIn && (
+          <button
+            onClick={handleLogout}
+            aria-label="Log out"
+            title="Log out"
+            className="flex items-center space-x-1 bg-white/10 hover:bg-white/20 px-3 py-1 rounded-md transition"
+          >
+            <LogOut size={18} />
+            <span className="text-sm">Logout</span>
+          </button>
+        )}
       </div>
     </nav>
   );

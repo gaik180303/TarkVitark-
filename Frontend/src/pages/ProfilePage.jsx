@@ -4,32 +4,41 @@ import { Users, UserCircle2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import LeftSideBar from '../components/LeftSideBar';
 import Footer from '../components/Footer';
+import userService from '../services/userService';
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    let active = true;
+
     const getUser = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/current`, {
-          credentials: 'include',
-        });
-
-        const data = await res.json();
-        if (res.ok) {
-          setUser(data.data);
-        } else {
-          console.error('Failed to fetch user:', data.message);
-        }
+        const currentUser = await userService.getCurrentUser();
+        if (active) setUser(currentUser);
       } catch (err) {
-        console.error('Error:', err);
+        if (active) setError(err.response?.data?.message || 'Failed to load profile');
+      } finally {
+        if (active) setLoading(false);
       }
     };
 
     getUser();
+    return () => { active = false; };
   }, []);
 
-  const profileImage = user?.avatar || "https://avatars.githubusercontent.com/u/9919?s=280&v=4";
+  const profileImage = user?.avatarUrl
+    || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}`;
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading profile…</div>;
+  }
+
+  if (error) {
+    return <div className="flex items-center justify-center min-h-screen text-red-600">{error}</div>;
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -66,8 +75,8 @@ export default function ProfilePage() {
 
                   {/* User Info */}
                   <div className="mt-6 text-center">
-                    <h1 className="text-2xl font-bold text-gray-900">{user?.fullName || "Loading..."}</h1>
-                    <p className="text-gray-600 mt-1">@{user?.username || "username"}</p>
+                    <h1 className="text-2xl font-bold text-gray-900">{user.fullName}</h1>
+                    <p className="text-gray-600 mt-1">@{user.username}</p>
                   </div>
 
                   {/* Stats */}

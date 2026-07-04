@@ -1,0 +1,13 @@
+# OS junk
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Editor/agent tooling
+.claude/

@@ -28,10 +28,6 @@ const messageSchema = new Schema({
     type: Boolean,
     default: false
   },
-  // createdAt: {
-  //   type: Date,
-  //   default: Date.now
-  // }
 }, {
   timestamps: true
 });
@@ -40,11 +36,6 @@ const messageSchema = new Schema({
 messageSchema.index({ debateId: 1, createdAt: 1 });
 messageSchema.index({ sender: 1, createdAt: -1 });
 messageSchema.index({ flagged: 1 }, { sparse: true });
-
-// Virtual field to determine message age
-messageSchema.virtual('age').get(function() {
-  return Date.now() - this.createdAt;
-});
 
 // Method to add translation
 messageSchema.methods.addTranslation = function(langCode, text) {
@@ -57,7 +48,7 @@ messageSchema.statics.findRecentByDebate = function(debateId, limit = 50) {
   return this.find({ debateId })
     .sort({ createdAt: -1 })
     .limit(limit)
-    .populate('sender', 'username avatar')
+    .populate('sender', 'username avatarUrl')
     .exec();
 };
 

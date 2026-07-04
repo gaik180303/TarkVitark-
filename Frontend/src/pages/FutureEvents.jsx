@@ -80,20 +80,6 @@ function FutureEvents() {
     }
   };
 
-  const handleUnregister = async (debateId) => {
-    try {
-      await debateService.unregisterFromDebate(debateId);
-      setRegisteredDiscussions(prev => {
-        const updated = new Set(prev);
-        updated.delete(debateId); // remove from registered set
-        return updated;
-      });
-      alert("You have been unregistered from the debate.");
-    } catch (error) {
-      alert(error.response?.data?.message || 'Failed to unregister');
-    }
-  };
-
   // Host Debate Handlers
   const openHostModal = () => setHostModalOpen(true);
   const closeHostModal = () => setHostModalOpen(false);
@@ -109,29 +95,23 @@ function FutureEvents() {
       alert('Please fill in all fields.');
       return;
     }
-    if (!currentUser || !currentUser._id) {
-      alert('User info not loaded. Please log in again.');
-      return;
-    }
     // Combine date and time into ISO string
-    const start_time = new Date(`${hostForm.date}T${hostForm.time}`);
-    if (start_time < new Date()) {
+    const scheduledAt = new Date(`${hostForm.date}T${hostForm.time}`);
+    if (scheduledAt < new Date()) {
       alert('Scheduled time must be in the future.');
       return;
     }
     try {
-      // Create the debate room with host as initial participant
-      const payload = {
-        name: hostForm.topic,
+      // The server sets the authenticated user as host and first participant
+      const newDebate = await debateService.createDebate({
+        title: hostForm.topic,
         description: hostForm.description,
-        scheduledAt: start_time.toISOString(),
-        participants: [currentUser._id]
-      };
-      const response = await debateService.createDebateRoom(payload);
+        scheduledAt: scheduledAt.toISOString(),
+      });
       alert('Debate room created successfully!');
       setHostModalOpen(false);
       setHostForm({ topic: '', description: '', date: '', time: '' });
-      setDiscussions(prev => [response, ...prev]);
+      setDiscussions(prev => [{ ...newDebate, host: currentUser }, ...prev]);
     } catch (error) {
       alert(error.response?.data?.message || 'Failed to create debate room');
     }
@@ -212,12 +192,9 @@ function FutureEvents() {
                       </div>
                       {!isPast && (
                         registeredDiscussions.has(discussion.id || discussion._id) ? (
-                          <button
-                            onClick={() => handleUnregister(discussion.id || discussion._id)}
-                            className="text-sm px-3 py-1 bg-gray-300 text-gray-700 rounded-full hover:bg-gray-400"
-                          >
-                            Unregister
-                          </button>
+                          <span className="text-sm px-3 py-1 bg-green-100 text-green-700 rounded-full">
+                            Registered ✓
+                          </span>
                         ) : (
                           <RegisterForDebateButton
                             debate={discussion}

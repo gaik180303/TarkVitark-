@@ -1,57 +1,46 @@
 import api from '../lib/axios';
 
 const userService = {
-  // Get user's stance for a debate room
+  // Current user's stance for a debate room
   getDebateStance: async (roomId) => {
-    const response = await api.get(`/discussions/${roomId}/registration`);
-    return response.data.stance;
-  },
-  // Login user
-  login: async (email, password) => {
-    const response = await api.post('/users/login', {
-      email,
-      password
-    });
-    const { accessToken } = response.data.data;
-    localStorage.setItem('accessToken', accessToken);
-    return response.data;
+    const response = await api.get(`/debates/${roomId}/registration`);
+    return response.data.data.stance;
   },
 
-  // Register user
+  // Login — auth is set via httpOnly cookies by the server; returns the user object
+  login: async (email, password) => {
+    const response = await api.post('/users/login', { email, password });
+    return response.data.data.user;
+  },
+
+  // Register — multipart because of the optional profile picture
   register: async (userData) => {
     const formData = new FormData();
-    Object.keys(userData).forEach(key => {
-      formData.append(key, userData[key]);
+    Object.entries(userData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) formData.append(key, value);
     });
-    
+
     const response = await api.post('/users/register', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      headers: { 'Content-Type': 'multipart/form-data' }
     });
-    return response.data;
+    return response.data.data;
   },
 
-  // Logout user
   logout: async () => {
     const response = await api.post('/users/logout');
-    localStorage.removeItem('accessToken');
     return response.data;
   },
 
-  // Get current user
   getCurrentUser: async () => {
     const response = await api.get('/users/current');
     return response.data.data;
   },
 
-  // Update user profile
   updateProfile: async (userData) => {
     const response = await api.patch('/users/update', userData);
-    return response.data;
+    return response.data.data;
   },
 
-  // Change password
   changePassword: async (oldPassword, newPassword) => {
     const response = await api.post('/users/change-password', {
       oldPassword,

@@ -1,69 +1,34 @@
 import React, { useState } from 'react';
-import { Mail, Lock, LogIn } from 'lucide-react';
-import Button from '../components/Button';
+import { LogIn, Mail, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-// import { toast } from 'react-toastify';
-
+import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
+import userService from '../services/userService';
 
 function Login() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth(); 
-  const navigate = useNavigate();
-  
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
 
-  // const handleSubmit = (e) => {
-    
-  //   e.preventDefault();
-  //   // Perform login logic here using mock user data
-  //   const mockUser = {
-  //     email: 'test@gmail.com',
-  //     password: '12345678',
-  //   };
-
-  //   if (email === mockUser.email && password === mockUser.password) {
-  //     console.log('Login successful');
-  //     // toast.success('Login successful!');
-  //   } else {
-  //     console.error('Invalid email or password');
-  //     // toast.error('Invalid email or password');
-  //     return;
-  //   }
-
-  //   navigate('/home'); // Redirect to home page after login
-
-  //   console.log('Login attempt:', { email, password });
-  // };
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include', // required if you're using cookies for authentication
-      body: JSON.stringify({ email, password })
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      console.log('✅ Login successful:', data);
-      login(); // Call login function from AuthContext
-      navigate('/home'); // redirect after success
-    } else {
-      console.error('❌ Login failed:', data.message || 'Invalid credentials');
+    try {
+      const user = await userService.login(email, password);
+      login(user);
+      navigate('/home');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-  } catch (error) {
-    console.error('❌ Network error:', error.message);
-  }
-};
-
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
@@ -77,6 +42,12 @@ const handleSubmit = async (e) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div role="alert" className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium text-gray-700 block">
               Email address
@@ -117,47 +88,20 @@ const handleSubmit = async (e) => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
-            <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500">
-              Forgot password?
-            </a>
-          </div>
-          {/* <Link> */}
           <Button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            disabled={submitting}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Login
+            {submitting ? 'Signing in…' : 'Login'}
           </Button>
-          {/* </Link> */}
         </form>
 
-        <div className="text-center text-sm flex justify-between items-center">
-          <div>
-            <span className="text-gray-600">Don't have an account? </span>
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign up
-            </Link>
-          </div>
-          <button
-            onClick={() => {
-              setEmail('test@gmail.com');
-              setPassword('12345678');
-            }}
-            className="font-medium text-purple-600 hover:text-blue-500 ml-4"
-          >
-            Demo User
-          </button>
+        <div className="text-center text-sm">
+          <span className="text-gray-600">Don't have an account? </span>
+          <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+            Sign up
+          </Link>
         </div>
       </div>
     </div>

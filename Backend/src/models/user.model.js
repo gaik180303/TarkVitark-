@@ -13,10 +13,10 @@ const userSchema = new Schema(
       index: true,
     },
     fullName: {
-  type: String,
-  required: true,
-  trim: true,
-},
+      type: String,
+      required: true,
+      trim: true,
+    },
     email: {
       type: String,
       required: true,
@@ -50,18 +50,6 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    registeredDebates: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Debate",
-      },
-    ],
-    hostedDebates: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Debate",
-      },
-    ],
     refreshToken: {
       type: String,
     },

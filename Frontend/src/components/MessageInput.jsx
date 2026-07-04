@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Send, Mic, X } from 'lucide-react';
 
-export default function MessageInput({ onSendMessage }) {
+export default function MessageInput({ onSendMessage, disabled = false }) {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  
+
   const handleSendMessage = () => {
-    if (message.trim()) {
+    if (message.trim() && !disabled) {
       onSendMessage(message);
       setMessage('');
     }
@@ -42,8 +42,9 @@ export default function MessageInput({ onSendMessage }) {
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type your message..."
-            className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            placeholder={disabled ? "Chat unavailable" : "Type your message..."}
+            disabled={disabled}
+            className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
             rows={1}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -76,7 +77,8 @@ export default function MessageInput({ onSendMessage }) {
         
         <button
           onClick={handleSendMessage}
-          className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600"
+          disabled={disabled}
+          className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send size={20} />
         </button>

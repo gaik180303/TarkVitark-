@@ -1,37 +1,30 @@
-
 import { Router } from 'express';
 import {
     getActiveDebates,
     getUpcomingDebates,
+    registerForDebate,
+    getRegistrationForDebate,
     getDebateDetails,
     createDebate,
     getHostedDebates,
     getParticipatedDebates,
-    joinDebate,
-    leaveDebate,
-    updateDebateStatus
 } from '../controllers/discussion.controller.js';
-import { registerForDebate } from '../controllers/debate.controller.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
-import { createDebateRoom } from '../controllers/debateRoom.controller.js';
 
 const router = Router();
 
 // Public routes
 router.get('/active', getActiveDebates);
 router.get('/upcoming', getUpcomingDebates);
-router.get('/:id', getDebateDetails);
 
-// Protected routes
-router.use(verifyJWT); // Apply authentication middleware to all routes below
-
-// Debate registration
+// Protected routes — specific paths MUST be declared before '/:id',
+// otherwise Express matches them as a debate id.
+router.use(verifyJWT);
 router.post('/register', registerForDebate);
-
-// Debate Room creation (protected)
-router.post('/debate-room', createDebateRoom);
-
-// // Register for a debate (protected)
-// router.post('/register', verifyJWT, registerForDebate);
+router.post('/create', createDebate);
+router.get('/hosted', getHostedDebates);
+router.get('/participated', getParticipatedDebates);
+router.get('/:id/registration', getRegistrationForDebate);
+router.get('/:id', getDebateDetails);
 
 export default router;

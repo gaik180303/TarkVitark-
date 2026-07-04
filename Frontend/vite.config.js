@@ -4,13 +4,13 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(),tailwindcss()],
+  plugins: [react(), tailwindcss()],
   server: {
     proxy: {
+      // Local backend by default; override with VITE_PROXY_TARGET if needed
       '/api': {
-        target: 'https://tarkvitark.onrender.com', // Adjust this to your backend URL
+        target: process.env.VITE_PROXY_TARGET || 'http://localhost:8000',
         changeOrigin: true,
-        secure: false,
       },
     },
   },

@@ -1,7 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { asyncHandler } from "../utils/asyncHandler";
-import { ApiResponse } from "../utils/ApiResponse";
-import { ApiError } from "../utils/ApiError";
+
 const votingSchema = new Schema({
   debateId: {
     type: Schema.Types.ObjectId,
