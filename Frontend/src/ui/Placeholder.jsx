@@ -1,5 +1,6 @@
 
 
+// eslint-disable-next-line no-unused-vars -- `motion` is used as a JSX namespace (<motion.div>)
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "../lib/utils";

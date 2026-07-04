@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Home, Search, Flame, FileText } from "lucide-react";
 import { Sidebar, SidebarBody, SidebarLink } from "../ui/sidebar";
+// eslint-disable-next-line no-unused-vars -- `motion` is used as a JSX namespace (<motion.span>)
 import { motion } from "motion/react";
 import { cn } from "../lib/utils";
 

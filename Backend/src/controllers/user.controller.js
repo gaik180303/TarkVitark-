@@ -20,7 +20,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
     await user.save({ validateBeforeSave: false });
 
     return { accessToken, refreshToken };
-  } catch (err) {
+  } catch {
     throw new ApiError(500, "Failed to generate access and refresh tokens");
   }
 };
@@ -139,7 +139,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       .cookie("refreshToken", newRefreshToken, COOKIE_OPTIONS)
       .json(new ApiResponse(200, {}, "Access token refreshed"));
 
-  } catch (error) {
+  } catch {
     throw new ApiError(401, "Invalid refresh token");
   }
 });

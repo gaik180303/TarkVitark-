@@ -25,7 +25,7 @@ const authenticateSocket = async (socket, next) => {
 
     socket.user = { id: user._id.toString(), username: user.username };
     next();
-  } catch (err) {
+  } catch {
     next(new Error('Unauthorized: invalid or expired token'));
   }
 };
@@ -74,7 +74,7 @@ export default function setupSocket(server) {
         }
 
         io.to(roomId).emit('roomUpdate', { participants: rooms[roomId].participants });
-      } catch (err) {
+      } catch {
         socket.emit('error', { message: 'Server error joining room.' });
       }
     });
@@ -96,7 +96,7 @@ export default function setupSocket(server) {
         await newMessage.populate('sender', 'fullName username avatarUrl');
 
         io.to(roomId).emit('receiveMessage', newMessage);
-      } catch (err) {
+      } catch {
         socket.emit('error', { message: 'Failed to send message.' });
       }
     });

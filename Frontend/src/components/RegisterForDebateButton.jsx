@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Modal from 'react-modal';
+import { toast } from 'sonner';
 
 Modal.setAppElement('#root');
 
@@ -26,7 +27,7 @@ function RegisterForDebateButton({
   const handleRegistration = async (e) => {
     e.preventDefault();
     if (!registrationData.stance || !registrationData.agreedToRules) {
-      alert('Please select your stance and agree to the rules.');
+      toast.error('Please select your stance and agree to the rules.');
       return;
     }
     setRegistering(true);
@@ -39,11 +40,9 @@ function RegisterForDebateButton({
       setModalIsOpen(false);
       setRegistrationData({ stance: '', agreedToRules: false });
       if (onRegisterSuccess) onRegisterSuccess();
-      alert('Successfully registered for the debate!');
+      toast.success('Successfully registered for the debate!');
     } catch (error) {
-      console.error('Registration error:', error);
-      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-      alert(errorMessage);
+      toast.error(error.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setRegistering(false);
     }

@@ -205,7 +205,8 @@
 "use client";
 import { cn } from "../lib/utils";
 import React, { useState, createContext, useContext } from "react";
-import { AnimatePresence, motion } from "framer-motion"; // Fixed import
+// eslint-disable-next-line no-unused-vars -- `motion` is used as a JSX namespace (<motion.div>)
+import { AnimatePresence, motion } from "framer-motion";
 import { IconMenu2, IconX } from "@tabler/icons-react";
 
 const SidebarContext = createContext(undefined);

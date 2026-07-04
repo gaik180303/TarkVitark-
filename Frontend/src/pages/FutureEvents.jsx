@@ -8,17 +8,12 @@ import Footer from '../components/Footer';
 import debateService from '../services/debateService';
 import userService from '../services/userService';
 import RegisterForDebateButton from '../components/RegisterForDebateButton';
+import { toast } from 'sonner';
 
 Modal.setAppElement('#root');
 
 function FutureEvents() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [selectedDiscussion, setSelectedDiscussion] = useState(null);
-  const [registrationData, setRegistrationData] = useState({
-    stance: '',
-    agreedToRules: false
-  });
   const [registeredDiscussions, setRegisteredDiscussions] = useState(new Set());
   const [discussions, setDiscussions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,36 +45,6 @@ function FutureEvents() {
     fetchInitialData();
   }, []);
 
-  const openRegistrationModal = (discussion) => {
-    setSelectedDiscussion(discussion);
-    setModalIsOpen(true);
-  };
-
-  const handleRegistration = async (e) => {
-    e.preventDefault();
-
-    if (!registrationData.stance || !registrationData.agreedToRules) {
-      alert('Please fill in all required fields and agree to the rules.');
-      return;
-    }
-
-    try {
-      const response = await debateService.registerForDebate(
-        selectedDiscussion.id || selectedDiscussion._id,
-        registrationData.stance,
-        registrationData.agreedToRules
-      );
-
-      setRegisteredDiscussions(prev => new Set([...prev, selectedDiscussion.id]));
-      setModalIsOpen(false);
-      setRegistrationData({ stance: '', agreedToRules: false });
-
-      alert('Successfully registered for the debate!');
-    } catch (error) {
-      alert(error.response?.data?.message || 'Failed to register for debate');
-    }
-  };
-
   // Host Debate Handlers
   const openHostModal = () => setHostModalOpen(true);
   const closeHostModal = () => setHostModalOpen(false);
@@ -92,13 +57,13 @@ function FutureEvents() {
   const handleHostSubmit = async (e) => {
     e.preventDefault();
     if (!hostForm.topic || !hostForm.description || !hostForm.date || !hostForm.time) {
-      alert('Please fill in all fields.');
+      toast.error('Please fill in all fields.');
       return;
     }
     // Combine date and time into ISO string
     const scheduledAt = new Date(`${hostForm.date}T${hostForm.time}`);
     if (scheduledAt < new Date()) {
-      alert('Scheduled time must be in the future.');
+      toast.error('Scheduled time must be in the future.');
       return;
     }
     try {
@@ -108,12 +73,12 @@ function FutureEvents() {
         description: hostForm.description,
         scheduledAt: scheduledAt.toISOString(),
       });
-      alert('Debate room created successfully!');
+      toast.success('Debate room created successfully!');
       setHostModalOpen(false);
       setHostForm({ topic: '', description: '', date: '', time: '' });
       setDiscussions(prev => [{ ...newDebate, host: currentUser }, ...prev]);
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to create debate room');
+      toast.error(error.response?.data?.message || 'Failed to create debate room');
     }
   };
 
@@ -154,6 +119,12 @@ function FutureEvents() {
                   Host a Debate
                 </button>
               </div>
+              {discussions.length === 0 ? (
+                <div className="text-center py-16 text-gray-500">
+                  <p className="text-lg font-medium">No upcoming debates yet</p>
+                  <p className="text-sm mt-1">Be the first — click “Host a Debate” to schedule one.</p>
+                </div>
+              ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {discussions.map(discussion => {
   // Use scheduledAt for the event time
@@ -213,6 +184,7 @@ function FutureEvents() {
                 );
 })}
               </div>
+              )}
             </div>
           </div>
         </div>

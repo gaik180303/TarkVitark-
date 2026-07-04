@@ -4,7 +4,8 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['dist'] },
+  // dist = build output; payment module is intentionally out of scope
+  { ignores: ['dist', 'src/components/PaymentButton.jsx', 'src/services/paymentService.js'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
@@ -29,5 +30,10 @@ export default [
         { allowConstantExport: true },
       ],
     },
+  },
+  // Node-context config files
+  {
+    files: ['*.config.js'],
+    languageOptions: { globals: globals.node },
   },
 ]

@@ -22,7 +22,7 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
 
     req.user = user;
     next();
-  } catch (err) {
+  } catch {
     throw new ApiError(401, "Invalid or expired access token.");
   }
 });

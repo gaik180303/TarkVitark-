@@ -8,25 +8,11 @@ import LeftSideBar from '../components/LeftSideBar';
 import Footer from '../components/Footer';
 import Box from '../components/ActiveBox';
 import debateService from '../services/debateService';
-import userService from '../services/userService';
 
 function ActiveDiscussion() {
   const navigate = useNavigate();
   const [activeDebates, setActiveDebates] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const u = await userService.getCurrentUser();
-        setUser(u);
-      } catch (e) {
-        setUser(null);
-      }
-    };
-    fetchUser();
-  }, []);
 
   useEffect(() => {
     const fetchActiveDebates = async () => {

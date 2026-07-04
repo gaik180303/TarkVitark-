@@ -2,16 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+// The app talks to the backend via the absolute VITE_API_BASE_URL (see src/lib/axios.js),
+// so no dev proxy is needed.
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  server: {
-    proxy: {
-      // Local backend by default; override with VITE_PROXY_TARGET if needed
-      '/api': {
-        target: process.env.VITE_PROXY_TARGET || 'http://localhost:8000',
-        changeOrigin: true,
-      },
-    },
-  },
 })
