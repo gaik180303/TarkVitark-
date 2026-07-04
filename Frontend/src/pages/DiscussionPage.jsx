@@ -6,6 +6,9 @@ import ChatBody from '../components/ChatBody';
 import MessageInput from '../components/MessageInput';
 import Navbar from '../components/Navbar';
 import LeftSideBar from '../components/LeftSideBar';
+import MindsChangedPanel from '../components/MindsChangedPanel';
+import TurnBanner from '../components/TurnBanner';
+import { toast } from 'sonner';
 import userService from '../services/userService';
 import messageService from '../services/messageService';
 
@@ -18,10 +21,12 @@ function DiscussionPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [voteUpdate, setVoteUpdate] = useState(null);
+  const [turn, setTurn] = useState({ active: false });
   const socketRef = useRef(null);
 
   const location = useLocation();
-  const { roomId, title, author } = location.state || {};
+  const { roomId, title, author, status } = location.state || {};
 
   useEffect(() => {
     if (!roomId) return undefined;
@@ -60,6 +65,18 @@ function DiscussionPage() {
           setParticipants(data.participants || []);
         });
 
+        socket.on('voteUpdate', (data) => {
+          setVoteUpdate(data);
+        });
+
+        socket.on('turnUpdate', (data) => {
+          setTurn(data);
+        });
+
+        socket.on('debateEnded', () => {
+          toast('The debate has ended — cast your final vote!');
+        });
+
         socket.on('error', (err) => {
           setError(err.message || 'A chat error occurred.');
         });
@@ -92,6 +109,19 @@ function DiscussionPage() {
     socketRef.current.emit('sendMessage', { roomId, content: text });
   };
 
+  const startDebate = () => socketRef.current?.emit('startDebate', { roomId, turnSeconds: 45 });
+  const endDebate = () => socketRef.current?.emit('endDebate', { roomId });
+
+  // Am I the host? Derived from presence (which flags the host).
+  const me = participants.find((p) => String(p.id) === String(currentUser?._id));
+  const isHost = !!me?.isHost;
+
+  // Can I speak right now? Free chat unless turns are running; then only my side
+  // (the host may always moderate).
+  const myStance = currentUser?.stance;
+  const canSpeak =
+    !turn.active || isHost || !myStance || myStance === turn.currentStance;
+
   if (!roomId || !title) {
     return (
       <div className="flex items-center justify-center min-h-screen text-red-600">
@@ -117,8 +147,8 @@ function DiscussionPage() {
         <div className="fixed left-0 top-16 bottom-0 w-64 overflow-y-auto bg-white border-r">
           <LeftSideBar />
         </div>
-        <div className="ml-64 flex flex-col flex-grow bg-gray-50 relative">
-          <div className="fixed left-64 right-0 top-16 bg-gray-50 z-40 shadow-md">
+        <div className="ml-64 mr-80 flex flex-col flex-grow bg-gray-50 relative">
+          <div className="fixed left-64 right-80 top-16 bg-gray-50 z-40 shadow-md">
             <UpperHeader
               title={title}
               totalUsers={participants?.length || 0}
@@ -128,18 +158,35 @@ function DiscussionPage() {
               hostImage={`https://ui-avatars.com/api/?name=${encodeURIComponent(author || 'Host')}`}
             />
           </div>
-          <div className="flex-1 mt-32 mb-20 overflow-y-auto px-4">
+          <div className="fixed left-64 right-80 top-44 z-30">
+            <TurnBanner turn={turn} isHost={isHost} onStart={startDebate} onEnd={endDebate} />
+          </div>
+          <div className="flex-1 mt-56 mb-20 overflow-y-auto px-4">
             <ChatBody
               messages={messages}
               currentUserId={currentUser?._id}
             />
           </div>
-          <div className="fixed left-64 right-0 bottom-0 bg-gray-50 z-40 shadow-inner px-4 py-2">
+          <div className="fixed left-64 right-80 bottom-0 bg-gray-50 z-40 shadow-inner px-4 py-2">
+            {!canSpeak && (
+              <p className="text-center text-xs text-gray-500 pb-1">
+                It's the {turn.currentStance === 'in_favor' ? 'For' : 'Against'} side's turn — please wait.
+              </p>
+            )}
             <MessageInput
               onSendMessage={handleSendMessage}
-              disabled={!!error || !currentUser}
+              disabled={!!error || !currentUser || !canSpeak}
             />
           </div>
+        </div>
+
+        {/* Right rail: live Minds-Changed voting */}
+        <div className="fixed right-0 top-16 bottom-0 w-80 overflow-y-auto bg-gray-50 border-l p-3">
+          <MindsChangedPanel
+            debateId={roomId}
+            debateStatus={status}
+            liveUpdate={voteUpdate}
+          />
         </div>
       </div>
     </div>

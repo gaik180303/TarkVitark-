@@ -1,52 +1,53 @@
 import mongoose, { Schema } from "mongoose";
 
-const votingSchema = new Schema({
-  debateId: {
-    type: Schema.Types.ObjectId,
-    ref: 'DebateRoom',
-    required: true,
-    index: true
+// "Minds Changed" voting: each user records where they stand BEFORE the debate
+// and AFTER it. The winner is the side that moved more people (largest swing),
+// not the side with the bigger crowd.
+const voteSchema = new Schema(
+  {
+    debate: {
+      type: Schema.Types.ObjectId,
+      ref: "DebateRoom",
+      required: true,
+      index: true,
+    },
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    phase: {
+      type: String,
+      enum: ["pre", "post"],
+      required: true,
+    },
+    stance: {
+      type: String,
+      enum: ["in_favor", "against"],
+      required: true,
+    },
   },
-  userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  voteType: {
-    type: String,
-    enum: ['upvote', 'downvote'],
-    default: 'upvote'
-  },
-  value: {
-    type: Number,
-    enum: [1, -1],
-    default: 1
-  }
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-// 🧩 Ensure one vote per user per debate
-votingSchema.index({ userId: 1, debateId: 1 }, { unique: true });
+// One vote per user per phase per debate; re-voting updates the existing doc.
+voteSchema.index({ debate: 1, user: 1, phase: 1 }, { unique: true });
 
-// 🧮 Get vote count
-votingSchema.statics.getVoteCount = async function(debateId) {
-  const result = await this.aggregate([
-    { $match: { debateId: mongoose.Types.ObjectId(debateId) } },
-    {
-      $group: {
-        _id: null,
-        upvotes: { $sum: { $cond: [{ $gt: ["$value", 0] }, 1, 0] } },
-        downvotes: { $sum: { $cond: [{ $lt: ["$value", 0] }, 1, 0] } },
-        total: { $sum: "$value" }
-      }
-    }
+// Aggregate counts into { pre: {in_favor, against}, post: {in_favor, against} }.
+voteSchema.statics.summaryFor = async function (debateId) {
+  const rows = await this.aggregate([
+    { $match: { debate: new mongoose.Types.ObjectId(debateId) } },
+    { $group: { _id: { phase: "$phase", stance: "$stance" }, count: { $sum: 1 } } },
   ]);
 
-  return result.length > 0 ? result[0] : { upvotes: 0, downvotes: 0, total: 0 };
+  const summary = {
+    pre: { in_favor: 0, against: 0 },
+    post: { in_favor: 0, against: 0 },
+  };
+  for (const row of rows) {
+    summary[row._id.phase][row._id.stance] = row.count;
+  }
+  return summary;
 };
 
-// ✔️ Check if user already voted
-votingSchema.statics.hasUserVoted = function(userId, debateId) {
-  return this.findOne({ userId, debateId }).exec();
-};
-
-export const Voting = mongoose.model('Voting', votingSchema);
+export const Vote = mongoose.model("Vote", voteSchema);

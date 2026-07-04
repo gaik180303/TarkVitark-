@@ -1,83 +1,107 @@
-import React, { useState } from 'react';
-import { Send, Mic, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Mic, Square } from 'lucide-react';
+
+// Web Speech API is prefixed on Chromium and absent on Firefox/Safari.
+const SpeechRecognition =
+  typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
 export default function MessageInput({ onSendMessage, disabled = false }) {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef(null);
+  const baseTextRef = useRef(''); // text already typed before dictation started
 
-  const handleSendMessage = () => {
+  useEffect(() => {
+    return () => recognitionRef.current?.stop();
+  }, []);
+
+  const handleSend = () => {
     if (message.trim() && !disabled) {
       onSendMessage(message);
       setMessage('');
     }
   };
-  
-  const startVoiceRecording = () => {
-    if ('webkitSpeechRecognition' in window) {
-      const recognition = new window.webkitSpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      
-      recognition.onstart = () => {
-        setIsRecording(true);
-      };
-      
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setMessage((prev) => prev + ' ' + transcript);
-      };
-      
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
-      
-      recognition.start();
-    }
+
+  const stopRecording = () => {
+    recognitionRef.current?.stop();
+    setIsRecording(false);
   };
-  
+
+  const startRecording = () => {
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = document.documentElement.lang || 'en-US';
+    recognitionRef.current = recognition;
+    baseTextRef.current = message ? `${message.trim()} ` : '';
+
+    recognition.onresult = (event) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i += 1) {
+        transcript += event.results[i][0].transcript;
+      }
+      setMessage(baseTextRef.current + transcript);
+    };
+    recognition.onend = () => setIsRecording(false);
+    recognition.onerror = () => setIsRecording(false);
+
+    recognition.start();
+    setIsRecording(true);
+  };
+
   return (
     <div className="border-t bg-white p-4">
-      <div className="flex items-center space-x-2">
-        <div className="flex-1 relative">
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder={disabled ? "Chat unavailable" : "Type your message..."}
-            disabled={disabled}
-            className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-            rows={1}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-          />
-          
-          {isRecording && (
-            <button
-              onClick={() => setIsRecording(false)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-600"
-            >
-              <X size={20} />
-            </button>
-          )}
-        </div>
-        
-        <button
-          onClick={startVoiceRecording}
-          className={`p-2 rounded-full ${
-            isRecording
-              ? 'bg-red-100 text-red-500'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <Mic size={20} />
-        </button>
-        
-        <button
-          onClick={handleSendMessage}
+      <div className="flex items-end space-x-2">
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder={
+            disabled ? 'Chat unavailable' : isRecording ? 'Listening… speak your argument' : 'Type your message…'
+          }
           disabled={disabled}
+          className="flex-1 p-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+          rows={1}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+        />
+
+        {SpeechRecognition ? (
+          <button
+            type="button"
+            onClick={isRecording ? stopRecording : startRecording}
+            disabled={disabled}
+            aria-label={isRecording ? 'Stop dictation' : 'Dictate message'}
+            title={isRecording ? 'Stop dictation' : 'Speak your argument'}
+            className={`p-2 rounded-full transition disabled:opacity-50 ${
+              isRecording
+                ? 'bg-red-500 text-white animate-pulse'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {isRecording ? <Square size={20} /> : <Mic size={20} />}
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled
+            title="Voice input isn't supported in this browser (try Chrome or Edge)"
+            className="p-2 rounded-full bg-gray-50 text-gray-300 cursor-not-allowed"
+          >
+            <Mic size={20} />
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={handleSend}
+          disabled={disabled}
+          aria-label="Send message"
           className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send size={20} />

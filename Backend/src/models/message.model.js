@@ -18,6 +18,12 @@ const messageSchema = new Schema({
     required: true,
     trim: true
   },
+  // Snapshot of the sender's side at send time. null = host/moderator (no registered stance).
+  stance: {
+    type: String,
+    enum: ['in_favor', 'against', null],
+    default: null
+  },
   translatedText: {
     type: Map,
     of: String,

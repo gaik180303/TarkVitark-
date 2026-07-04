@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Users, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Users, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 export default function UpperHeader({
   title,
@@ -10,42 +10,32 @@ export default function UpperHeader({
   hostImage,
 }) {
   return (
-    <div className="bg-white shadow-sm p-4 flex justify-between items-center">
-      <div className="flex items-center space-x-4">
-        <h1 className="text-xl font-semibold text-gray-800">{title}</h1>
-        
-        <div className="relative group">
-          <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-800">
-            <span>Stats</span>
-            <ChevronDown size={16} />
-          </button>
-          
-          <div className="absolute hidden group-hover:block w-48 bg-white border rounded-lg shadow-lg mt-2 p-2 z-10">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2 text-gray-600">
-                <Users size={16} />
-                <span>Total Users: {totalUsers}</span>
-              </div>
-              <div className="flex items-center space-x-2 text-blue-600">
-                <ThumbsUp size={16} />
-                <span>In Favor: {inFavorCount}</span>
-              </div>
-              <div className="flex items-center space-x-2 text-pink-600">
-                <ThumbsDown size={16} />
-                <span>Against: {againstCount}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="bg-white shadow-sm border-b">
+      {/* Motion banner — makes it read as a debate, not a chat room */}
+      <div className="bg-gradient-to-r from-emerald-50 via-white to-rose-50 px-4 py-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">This house believes</p>
+        <h1 className="text-lg font-bold text-gray-900 leading-snug">{title}</h1>
       </div>
-      
-      <div className="flex items-center space-x-3">
-        <span className="text-gray-700">{hostName}</span>
-        <img
-          src={hostImage}
-          alt={hostName}
-          className="w-8 h-8 rounded-full object-cover"
-        />
+
+      <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-3">
+        {/* Always-visible, keyboard-accessible stance counts */}
+        <div className="flex items-center gap-4 text-sm">
+          <span className="flex items-center gap-1 text-gray-500">
+            <Users size={16} /> {totalUsers}
+          </span>
+          <span className="flex items-center gap-1 font-medium text-emerald-600">
+            <ThumbsUp size={16} /> For {inFavorCount}
+          </span>
+          <span className="flex items-center gap-1 font-medium text-rose-600">
+            <ThumbsDown size={16} /> Against {againstCount}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400">Hosted by</span>
+          <span className="text-sm text-gray-700">{hostName}</span>
+          <img src={hostImage} alt={hostName} className="w-7 h-7 rounded-full object-cover" />
+        </div>
       </div>
     </div>
   );

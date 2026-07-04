@@ -39,6 +39,7 @@ function ActiveDiscussion() {
         title: debate.title,
         description: debate.description,
         author: debate.host?.username || 'Unknown',
+        status: debate.status || 'ongoing',
       },
     });
   } catch (error) {

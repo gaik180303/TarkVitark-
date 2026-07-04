@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User2, Calendar, Clock, PlusCircle } from 'lucide-react';
+import { User2, Calendar, Clock, PlusCircle, Bell, Flame } from 'lucide-react';
+import { downloadDebateReminder } from '../lib/calendar';
 import Modal from 'react-modal';
 import { format } from 'date-fns';
 import Navbar from '../components/Navbar';
@@ -34,7 +35,13 @@ function FutureEvents() {
           debateService.getUpcomingDebates(),
           userService.getCurrentUser()
         ]);
-        setDiscussions(upcomingDebates);
+        // "Trending" = most-registered first; ties fall back to soonest.
+        const sorted = [...(upcomingDebates || [])].sort((a, b) => {
+          const diff = (b.participants?.length || 0) - (a.participants?.length || 0);
+          if (diff !== 0) return diff;
+          return new Date(a.scheduledAt) - new Date(b.scheduledAt);
+        });
+        setDiscussions(sorted);
         setCurrentUser(user);
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -126,15 +133,24 @@ function FutureEvents() {
                 </div>
               ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {discussions.map(discussion => {
+                {discussions.map((discussion, idx) => {
   // Use scheduledAt for the event time
   const isPast = new Date(discussion.scheduledAt) <= new Date();
+  // Top of the trending sort (with at least one registrant) gets a flame badge.
+  const isTrending = idx === 0 && (discussion.participants?.length || 0) > 0;
   return (
     <div
       key={discussion.id || discussion._id}
       className="bg-white rounded-lg shadow-md p-6 border border-gray-100"
     >
-      <h3 className="text-lg font-medium text-gray-900">{discussion.title}</h3>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-lg font-medium text-gray-900">{discussion.title}</h3>
+        {isTrending && (
+          <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full shrink-0">
+            <Flame className="h-3 w-3" /> Trending
+          </span>
+        )}
+      </div>
       <p className="text-gray-600 mt-2">{discussion.description}</p>
       <div className="flex items-center mt-4 space-x-3 text-sm text-gray-500">
         <Calendar className="h-4 w-4" />
@@ -161,6 +177,15 @@ function FutureEvents() {
                         <User2 className="h-5 w-5 text-gray-400" />
                         <span className="text-sm text-gray-600">{discussion.host.username}</span>
                       </div>
+                      <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => downloadDebateReminder(discussion)}
+                        title="Add to calendar"
+                        className="flex items-center gap-1 text-sm px-3 py-1 border border-gray-200 text-gray-600 rounded-full hover:bg-gray-50"
+                      >
+                        <Bell className="h-3.5 w-3.5" /> Remind me
+                      </button>
                       {!isPast && (
                         registeredDiscussions.has(discussion.id || discussion._id) ? (
                           <span className="text-sm px-3 py-1 bg-green-100 text-green-700 rounded-full">
@@ -179,6 +204,7 @@ function FutureEvents() {
                           />
                         )
                       )}
+                      </div>
                     </div>
                   </div>
                 );
