@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Square } from 'lucide-react';
+import { Send, Mic, Square, Link as LinkIcon } from 'lucide-react';
 
 // Web Speech API is prefixed on Chromium and absent on Firefox/Safari.
 const SpeechRecognition =
@@ -8,6 +8,8 @@ const SpeechRecognition =
 export default function MessageInput({ onSendMessage, disabled = false }) {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [showEvidence, setShowEvidence] = useState(false);
+  const [evidenceUrl, setEvidenceUrl] = useState('');
   const recognitionRef = useRef(null);
   const baseTextRef = useRef(''); // text already typed before dictation started
 
@@ -17,8 +19,10 @@ export default function MessageInput({ onSendMessage, disabled = false }) {
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
-      onSendMessage(message);
+      onSendMessage(message, evidenceUrl.trim() || null);
       setMessage('');
+      setEvidenceUrl('');
+      setShowEvidence(false);
     }
   };
 
@@ -53,7 +57,28 @@ export default function MessageInput({ onSendMessage, disabled = false }) {
 
   return (
     <div className="border-t bg-white p-4">
+      {showEvidence && (
+        <input
+          type="url"
+          value={evidenceUrl}
+          onChange={(e) => setEvidenceUrl(e.target.value)}
+          placeholder="Paste a source link (https://…) to back your claim"
+          className="mb-2 w-full p-2 text-sm rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      )}
       <div className="flex items-end space-x-2">
+        <button
+          type="button"
+          onClick={() => setShowEvidence((v) => !v)}
+          disabled={disabled}
+          aria-label="Attach a source link"
+          title="Cite a source"
+          className={`p-2 rounded-full transition disabled:opacity-50 ${
+            showEvidence || evidenceUrl ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <LinkIcon size={20} />
+        </button>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}

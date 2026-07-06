@@ -1,13 +1,28 @@
 # Tark-Vitark
 
-A real-time debate platform. Users register, schedule and host debate rooms, register for a
-side (for / against), and argue live over WebSockets with persisted chat history. Built as a
-MERN + Socket.IO application.
+A competitive **debate arena**. Users host and schedule debates, register for a side
+(for / against), and argue live over WebSockets. Every debate is judged **two ways** — by
+how many audience minds change from before to after, and by an AI judge scoring the
+arguments — with a live fact-checker, server-enforced speaking turns, and voice input.
+Built as a MERN + Socket.IO application.
 
 - **Frontend:** React (Vite), React Router, Tailwind CSS, Socket.IO client — deployed on Vercel
 - **Backend:** Node/Express 5, MongoDB (Mongoose), Socket.IO, JWT auth — deployed on Render
 
-> The payment module is a work in progress and is intentionally excluded from the current scope.
+### What makes it a debate platform (not a chat app)
+- **"Minds Changed" verdict** — the audience votes before *and* after; the winner is whoever
+  moved more of the room, shown on a live swing meter.
+- **Server-enforced turns** — the host starts timed, alternating turns; the server rejects
+  out-of-turn messages (the client is never trusted).
+- **Live AI fact-checker** — each message is checked asynchronously and gets an inline verdict
+  badge; speakers can attach a source link that the checker prioritizes.
+- **AI match report** — on debate end, an LLM writes a summary and scores both sides; the result
+  screen shows "AI Judge vs the Crowd" with talk-share stats and a shareable result card.
+- Stance-colored chat, best-argument stars, voice-to-text, trending motions + `.ics` reminders.
+
+> The AI features run in a deterministic **demo mode** with no API key, and use a real model
+> (Groq or Gemini) when a key is provided — see the env table. The payment module is a work in
+> progress and intentionally out of scope.
 
 ---
 
@@ -42,6 +57,14 @@ MERN + Socket.IO application.
 ### Prerequisites
 - Node.js 20+
 - A MongoDB instance (local `mongod`, Docker, or an Atlas connection string)
+
+### Fastest path: Docker Compose
+```bash
+cp Backend/.env.example Backend/.env   # fill in secrets (JWT secrets at minimum)
+docker compose up
+# frontend http://localhost:5173 · backend http://localhost:8000
+```
+Or run the two apps manually:
 
 ### 1. Backend
 
@@ -80,8 +103,12 @@ Open http://localhost:5173, register an account, and you're in.
 | `REFRESH_TOKEN_SECRET`   | **yes**  | Secret for signing refresh tokens                       |
 | `REFRESH_TOKEN_EXPIRY`   | no       | e.g. `10d` (default `10d`)                              |
 | `CLOUDINARY_*`           | no       | Cloudinary creds for avatar uploads (optional)          |
+| `LLM_PROVIDER`           | no       | `mock` (default), `groq`, or `gemini`                   |
+| `GROQ_API_KEY`           | no       | Enables real fact-check / summary / AI judge (Groq)     |
+| `GEMINI_API_KEY`         | no       | Alternative provider (Gemini)                           |
 
 The server validates these at boot and exits with a clear message if a required one is missing.
+Without an LLM key the AI features run in demo mode — they never block the app.
 
 ### Frontend (`Frontend/.env.local`)
 

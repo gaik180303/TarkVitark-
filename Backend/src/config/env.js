@@ -20,6 +20,13 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
+
+  // AI layer is optional — without a key it runs in deterministic "demo mode"
+  LLM_PROVIDER: z.enum(["mock", "groq", "gemini"]).default("mock"),
+  GROQ_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
+  GROQ_MODEL: z.string().optional(),
+  GEMINI_MODEL: z.string().optional(),
 });
 
 export const validateEnv = () => {

@@ -24,6 +24,23 @@ const messageSchema = new Schema({
     enum: ['in_favor', 'against', null],
     default: null
   },
+  // Optional source link the speaker attaches to back a claim.
+  evidenceUrl: {
+    type: String,
+    default: null
+  },
+  // Async AI fact-check result (filled in shortly after the message is sent).
+  factCheck: {
+    verdict: {
+      type: String,
+      enum: ['accurate', 'inaccurate', 'misleading', 'unverifiable'],
+    },
+    explanation: String,
+    confidence: Number,
+    checkedAt: Date,
+  },
+  // Users who starred this as a strong argument.
+  stars: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   translatedText: {
     type: Map,
     of: String,

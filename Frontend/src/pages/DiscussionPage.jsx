@@ -8,6 +8,7 @@ import Navbar from '../components/Navbar';
 import LeftSideBar from '../components/LeftSideBar';
 import MindsChangedPanel from '../components/MindsChangedPanel';
 import TurnBanner from '../components/TurnBanner';
+import MatchReport from '../components/MatchReport';
 import { toast } from 'sonner';
 import userService from '../services/userService';
 import messageService from '../services/messageService';
@@ -23,6 +24,8 @@ function DiscussionPage() {
   const [error, setError] = useState('');
   const [voteUpdate, setVoteUpdate] = useState(null);
   const [turn, setTurn] = useState({ active: false });
+  const [matchResult, setMatchResult] = useState(null);
+  const [reportOpen, setReportOpen] = useState(false);
   const socketRef = useRef(null);
 
   const location = useLocation();
@@ -77,6 +80,19 @@ function DiscussionPage() {
           toast('The debate has ended — cast your final vote!');
         });
 
+        socket.on('debateResult', (result) => {
+          setMatchResult(result);
+          setReportOpen(true);
+        });
+
+        socket.on('factCheckResult', ({ messageId, factCheck }) => {
+          setMessages((prev) => prev.map((m) => (m._id === messageId ? { ...m, factCheck } : m)));
+        });
+
+        socket.on('messageStarred', ({ messageId, starCount }) => {
+          setMessages((prev) => prev.map((m) => (m._id === messageId ? { ...m, starCount } : m)));
+        });
+
         socket.on('error', (err) => {
           setError(err.message || 'A chat error occurred.');
         });
@@ -104,11 +120,12 @@ function DiscussionPage() {
     };
   }, [roomId]);
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = (text, evidenceUrl) => {
     if (!text.trim() || !socketRef.current) return;
-    socketRef.current.emit('sendMessage', { roomId, content: text });
+    socketRef.current.emit('sendMessage', { roomId, content: text, evidenceUrl });
   };
 
+  const handleStar = (messageId) => socketRef.current?.emit('starMessage', { roomId, messageId });
   const startDebate = () => socketRef.current?.emit('startDebate', { roomId, turnSeconds: 45 });
   const endDebate = () => socketRef.current?.emit('endDebate', { roomId });
 
@@ -165,6 +182,7 @@ function DiscussionPage() {
             <ChatBody
               messages={messages}
               currentUserId={currentUser?._id}
+              onStar={handleStar}
             />
           </div>
           <div className="fixed left-64 right-80 bottom-0 bg-gray-50 z-40 shadow-inner px-4 py-2">
@@ -187,8 +205,26 @@ function DiscussionPage() {
             debateStatus={status}
             liveUpdate={voteUpdate}
           />
+          {matchResult && (
+            <button
+              onClick={() => setReportOpen(true)}
+              className="mt-3 w-full text-xs font-medium bg-amber-100 text-amber-800 rounded-lg py-2 hover:bg-amber-200"
+            >
+              🏆 View match report
+            </button>
+          )}
         </div>
       </div>
+
+      {matchResult && reportOpen && (
+        <MatchReport
+          result={matchResult}
+          motion={title}
+          debateId={roomId}
+          messages={messages}
+          onClose={() => setReportOpen(false)}
+        />
+      )}
     </div>
   );
 }

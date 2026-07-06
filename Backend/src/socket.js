@@ -5,6 +5,9 @@ import { DebateRoom } from './models/debateRoom.model.js';
 import DebateRegistration from './models/debateRegistration.model.js';
 import Message from './models/message.model.js';
 import { User } from './models/user.model.js';
+import { scheduleFactCheck, scheduleDebateSummary } from './services/debateAnalysis.service.js';
+
+const isHttpUrl = (v) => typeof v === 'string' && /^https?:\/\/\S+$/i.test(v.trim());
 
 const MAX_MESSAGE_LENGTH = 2000;
 const TURN_ORDER = ['in_favor', 'against'];
@@ -157,12 +160,15 @@ export default function setupSocket(server) {
         await DebateRoom.findByIdAndUpdate(roomId, { status: 'ended' });
         io.to(String(roomId)).emit('turnUpdate', { active: false });
         io.to(String(roomId)).emit('debateEnded');
+
+        // Generate the AI match report (summary + judge + stats); emitted when ready.
+        scheduleDebateSummary(io, roomId);
       } catch {
         socket.emit('error', { message: 'Could not end the debate.' });
       }
     });
 
-    socket.on('sendMessage', async ({ roomId, content }) => {
+    socket.on('sendMessage', async ({ roomId, content, evidenceUrl }) => {
       try {
         const key = String(roomId);
         if (!joinedRooms.has(key)) {
@@ -170,6 +176,9 @@ export default function setupSocket(server) {
         }
         if (typeof content !== 'string' || !content.trim() || content.length > MAX_MESSAGE_LENGTH) {
           return socket.emit('error', { message: 'Message must be 1-2000 characters.' });
+        }
+        if (evidenceUrl && !isHttpUrl(evidenceUrl)) {
+          return socket.emit('error', { message: 'Evidence must be a valid http(s) link.' });
         }
 
         // If turns are running, only the current side may speak. The host (null stance)
@@ -186,12 +195,38 @@ export default function setupSocket(server) {
           content: content.trim(),
           sender: socket.user.id,
           stance: myStance ?? null,
+          evidenceUrl: evidenceUrl ? evidenceUrl.trim() : null,
         });
         await newMessage.populate('sender', 'fullName username avatarUrl');
 
         io.to(roomId).emit('receiveMessage', newMessage);
+
+        // Fire-and-forget AI fact-check; badge arrives over the socket when ready.
+        scheduleFactCheck(io, newMessage);
       } catch {
         socket.emit('error', { message: 'Failed to send message.' });
+      }
+    });
+
+    // Toggle a "strong argument" star on a message.
+    socket.on('starMessage', async ({ roomId, messageId }) => {
+      try {
+        if (!joinedRooms.has(String(roomId))) return;
+        const message = await Message.findById(messageId);
+        if (!message || String(message.debateId) !== String(roomId)) return;
+
+        const uid = socket.user.id;
+        const already = message.stars.some((s) => s.toString() === uid);
+        if (already) message.stars = message.stars.filter((s) => s.toString() !== uid);
+        else message.stars.push(uid);
+        await message.save();
+
+        io.to(String(roomId)).emit('messageStarred', {
+          messageId: String(messageId),
+          starCount: message.stars.length,
+        });
+      } catch {
+        /* non-critical */
       }
     });
 

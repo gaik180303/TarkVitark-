@@ -1,0 +1,41 @@
+# One-command local stack: MongoDB + backend API + frontend dev server.
+#   docker compose up
+# Copy Backend/.env.example -> Backend/.env first (the API reads it). The compose
+# file points MONGODB_URI at the bundled mongo service and wires CORS for the frontend.
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  backend:
+    build: ./Backend
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongo:27017
+      - CORS_ORIGIN=http://localhost:5173
+      # Secrets/keys still come from Backend/.env (not committed)
+    env_file:
+      - ./Backend/.env
+
+  frontend:
+    build: ./Frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api/v1
+
+volumes:
+  mongo-data:
